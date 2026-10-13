@@ -1,7 +1,7 @@
 // src/app/seed.tsx
-import { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { doc, setDoc } from "firebase/firestore";
+import { useState } from "react";
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { db } from "../../firebase/config";
 
 const COMMUNITIES = [

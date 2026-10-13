@@ -1,6 +1,6 @@
 // src/app/(tabs)/_layout.tsx
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 export default function TabsLayout() {
   return (
@@ -9,7 +9,8 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: "#4f46e5",
         tabBarInactiveTintColor: "#999",
-        tabBarStyle: { paddingBottom: 6, height: 60 }
+        tabBarStyle: { paddingBottom: 6, height: 62 },
+        tabBarLabelStyle: { fontSize: 10 }
       }}
     >
       <Tabs.Screen
@@ -27,10 +28,24 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="lostfound"
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />
+          title: "Lost & Found",
+          tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="market"
+        options={{
+          title: "Market",
+          tabBarIcon: ({ color, size }) => <Ionicons name="cart" color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: "Events",
+          tabBarIcon: ({ color, size }) => <Ionicons name="calendar" color={color} size={size} />
         }}
       />
     </Tabs>

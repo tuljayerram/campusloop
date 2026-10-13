@@ -1,17 +1,25 @@
 // src/app/create-post.tsx
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  addDoc,
+  collection,
+  doc, getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView, Platform,
+  ScrollView,
+  StyleSheet,
+  Text, TextInput, TouchableOpacity,
+  View
 } from "react-native";
-import { useRouter, useLocalSearchParams, Stack } from "expo-router";
-import {
-  collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, getDoc
-} from "firebase/firestore";
 import { auth, db } from "../../firebase/config";
-
-const LOSTFOUND_STATUS = ["lost", "found", "resolved"];
-const MARKET_STATUS = ["available", "sold"];
 
 export default function CreatePostScreen() {
   const router = useRouter();
@@ -22,34 +30,19 @@ export default function CreatePostScreen() {
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Extra fields for special communities
-  const [status, setStatus] = useState<string>("");
-  const [location, setLocation] = useState("");
-  const [price, setPrice] = useState("");
-  const [condition, setCondition] = useState("");
-  const [contact, setContact] = useState("");
-
-  const selectedCommunity = communities.find(c => c.id === communityId);
-  const isLostFound = selectedCommunity?.type === "lostfound";
-  const isMarket = selectedCommunity?.type === "market";
-
   useEffect(() => {
     async function loadCommunities() {
       const q = query(collection(db, "communities"), orderBy("name"));
       const snap = await getDocs(q);
-      setCommunities(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Exclude L&F and Market — those have dedicated screens
+      const filtered = rows.filter((c: any) =>
+        c.id !== "lostfound" && c.id !== "market"
+      );
+      setCommunities(filtered);
     }
     loadCommunities();
   }, []);
-
-  // Reset extra fields when switching community type
-  useEffect(() => {
-    setStatus("");
-    setLocation("");
-    setPrice("");
-    setCondition("");
-    setContact("");
-  }, [communityId]);
 
   async function submit() {
     if (!communityId) {
@@ -71,7 +64,7 @@ export default function CreatePostScreen() {
 
       const comm = communities.find(c => c.id === communityId);
 
-      const postData: any = {
+      await addDoc(collection(db, "posts"), {
         communityId,
         communityName: comm?.name || "",
         communityType: comm?.type || "general",
@@ -83,21 +76,8 @@ export default function CreatePostScreen() {
         upvotes: 0,
         votedBy: [],
         createdAt: serverTimestamp()
-      };
+      });
 
-      if (isLostFound) {
-        postData.itemStatus = status || "lost";
-        postData.location = location.trim();
-        postData.contact = contact.trim();
-      }
-      if (isMarket) {
-        postData.itemStatus = status || "available";
-        postData.price = price.trim();
-        postData.condition = condition.trim();
-        postData.contact = contact.trim();
-      }
-
-      await addDoc(collection(db, "posts"), postData);
       router.back();
     } catch (e: any) {
       console.log("POST ERR", e);
@@ -111,7 +91,6 @@ export default function CreatePostScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Stack.Screen options={{ headerShown: true, title: "New post" }} />
       <ScrollView contentContainerStyle={styles.container}>
-
         <Text style={styles.label}>Space</Text>
         {communities.length === 0 ? (
           <Text style={{ color: "#999", marginBottom: 12 }}>Loading spaces…</Text>
@@ -136,104 +115,14 @@ export default function CreatePostScreen() {
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder={
-            isLostFound ? "e.g. Lost black water bottle" :
-            isMarket ? "e.g. Selling Casio FX-991" :
-            "What's this about?"
-          }
+          placeholder="What's this about?"
           placeholderTextColor="#999"
           maxLength={120}
         />
 
-        {/* Lost & Found fields */}
-        {isLostFound && (
-          <>
-            <Text style={styles.label}>Status</Text>
-            <View style={styles.chipsRow}>
-              {LOSTFOUND_STATUS.map(s => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.chip, status === s && styles.chipActive]}
-                  onPress={() => setStatus(s)}
-                >
-                  <Text style={[styles.chipText, status === s && styles.chipTextActive]}>
-                    {s.toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Location</Text>
-            <TextInput
-              style={styles.input}
-              value={location}
-              onChangeText={setLocation}
-              placeholder="e.g. Library, 2nd floor"
-              placeholderTextColor="#999"
-            />
-
-            <Text style={styles.label}>Contact</Text>
-            <TextInput
-              style={styles.input}
-              value={contact}
-              onChangeText={setContact}
-              placeholder="Phone / email / room number"
-              placeholderTextColor="#999"
-            />
-          </>
-        )}
-
-        {/* Buy & Sell fields */}
-        {isMarket && (
-          <>
-            <Text style={styles.label}>Status</Text>
-            <View style={styles.chipsRow}>
-              {MARKET_STATUS.map(s => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.chip, status === s && styles.chipActive]}
-                  onPress={() => setStatus(s)}
-                >
-                  <Text style={[styles.chipText, status === s && styles.chipTextActive]}>
-                    {s.toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Price (₹)</Text>
-            <TextInput
-              style={styles.input}
-              value={price}
-              onChangeText={setPrice}
-              placeholder="e.g. 500"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-            />
-
-            <Text style={styles.label}>Condition</Text>
-            <TextInput
-              style={styles.input}
-              value={condition}
-              onChangeText={setCondition}
-              placeholder="e.g. Like new, 6 months old"
-              placeholderTextColor="#999"
-            />
-
-            <Text style={styles.label}>Contact</Text>
-            <TextInput
-              style={styles.input}
-              value={contact}
-              onChangeText={setContact}
-              placeholder="Phone / email / room number"
-              placeholderTextColor="#999"
-            />
-          </>
-        )}
-
-        <Text style={styles.label}>Description {isLostFound || isMarket ? "" : "(optional)"}</Text>
+        <Text style={styles.label}>Body (optional)</Text>
         <TextInput
-          style={[styles.input, { height: 120, textAlignVertical: "top" }]}
+          style={[styles.input, { height: 140, textAlignVertical: "top" }]}
           value={body}
           onChangeText={setBody}
           placeholder="Say more…"

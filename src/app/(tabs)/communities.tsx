@@ -1,10 +1,15 @@
 // src/app/(tabs)/communities.tsx
-import { useEffect, useState, useCallback } from "react";
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator
-} from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { collection, getDocs, query } from "firebase/firestore";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 import { db } from "../../../firebase/config";
 
 const TYPE_EMOJI: Record<string, string> = {
@@ -13,8 +18,6 @@ const TYPE_EMOJI: Record<string, string> = {
   class: "📚",
   canteen: "🍔",
   transport: "🚌",
-  lostfound: "🔍",
-  market: "🛒",
   general: "💬"
 };
 
@@ -27,7 +30,17 @@ export default function CommunitiesScreen() {
     try {
       const q = query(collection(db, "communities"));
       const snap = await getDocs(q);
-      setCommunities(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const filtered = rows.filter((c: any) =>
+        c.id !== "lostfound" && c.id !== "market"
+      );
+
+      filtered.sort((a: any, b: any) =>
+        (a.name || a.id).localeCompare(b.name || b.id)
+      );
+
+      setCommunities(filtered);
     } catch (e) {
       console.log("LOAD COMMUNITIES ERR", e);
     } finally {
@@ -61,7 +74,7 @@ export default function CommunitiesScreen() {
           >
             <Text style={styles.emoji}>{TYPE_EMOJI[item.type] || "💬"}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.name}>{item.name || item.id}</Text>
               {item.description ? (
                 <Text style={styles.desc} numberOfLines={1}>{item.description}</Text>
               ) : null}

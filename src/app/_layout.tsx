@@ -1,9 +1,9 @@
 // src/app/_layout.tsx
-import { useEffect, useState } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { auth, db } from "../../firebase/config";
 
 export default function RootLayout() {
@@ -33,30 +33,46 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-  if (checking) return;
+    if (checking) return;
 
-  const current = segments[0] as string | undefined;
+    const current = segments[0] as string | undefined;
 
-  // Routes that don't require login
-  const publicRoutes = ["index"];
-  // Routes that require login but NOT a profile yet
-  const profileSetupRoute = "profile-setup";
-  // Routes that require login AND a profile
-  const appRoutes = ["(tabs)", "community", "post", "create-post", "edit-post", "seed"];
+    const publicRoutes = ["index"];
+    const profileSetupRoute = "profile-setup";
+    const appRoutes = [
+      "(tabs)",
+      "community",
+      "post",
+      "create-post",
+      "edit-post",
+      "create-event",
+      "event",
+      "create-lostfound",
+      "create-market",
+      "profile",
+      "seed"
+    ];
 
-  const inPublic = current && publicRoutes.includes(current);
-  const inProfileSetup = current === profileSetupRoute;
-  const inApp = current && appRoutes.includes(current);
+    const inPublic = current && publicRoutes.includes(current);
+    const inProfileSetup = current === profileSetupRoute;
+    const inApp = current && appRoutes.includes(current);
 
-  if (!user) {
-    if (!inPublic) router.replace("/");
-  } else if (!hasProfile) {
-    if (!inProfileSetup) router.replace("/profile-setup");
-  } else {
-    // User is fully set up
-    if (!inApp) router.replace("/(tabs)/home");
+    if (!user) {
+      if (!inPublic) router.replace("/");
+    } else if (!hasProfile) {
+      if (!inProfileSetup) router.replace("/profile-setup");
+    } else {
+      if (!inApp) router.replace("/(tabs)/home");
+    }
+  }, [user, hasProfile, checking, segments]);
+
+  if (checking) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+      </View>
+    );
   }
-}, [user, hasProfile, checking, segments]);
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
